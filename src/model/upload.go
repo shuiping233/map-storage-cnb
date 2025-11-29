@@ -5,9 +5,9 @@ import (
 )
 
 type UploadFileRequest struct {
-	File       *multipart.FileHeader `form:"file" binding:"required"`
-	Filename   string                `form:"filename"`
-	Sha256     string                `form:"sha256"`
+	File     *multipart.FileHeader `form:"file" binding:"required"`
+	Filename string                `form:"filename"`
+	Sha256   string                `form:"sha256"`
 }
 
 type UploadFileResponse struct {

@@ -4,15 +4,11 @@ import (
 	"context"
 	"io"
 	"log"
+	"map-storage-cnb/src/config"
 	"map-storage-cnb/src/model"
 	"map-storage-cnb/src/utils"
 	"os"
 	"path/filepath"
-)
-
-const (
-	DbPath = "./tmp/test.db"
-	tmpDir = "./tmp"
 )
 
 type LocalStorage struct {
@@ -20,7 +16,7 @@ type LocalStorage struct {
 }
 
 func joinTmpPath(name string) string {
-	return filepath.Join(tmpDir, name)
+	return filepath.Join(config.LocalStorageDir, name)
 }
 
 func NewLocalStorage() *LocalStorage {
@@ -29,7 +25,7 @@ func NewLocalStorage() *LocalStorage {
 
 func (s *LocalStorage) Init() error {
 	utils.InitDefaultDir()
-	db, err := DBInit(DbPath)
+	db, err := DBInit(joinTmpPath(config.DbName))
 	if err != nil {
 		log.Fatal(err)
 	}

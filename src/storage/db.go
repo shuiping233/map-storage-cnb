@@ -15,7 +15,7 @@ type StorageDB struct {
 }
 
 func DBInit(DBPath string) (*StorageDB, error) {
-	db, err := gorm.Open(sqlite.Open(DbPath), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(DBPath), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
