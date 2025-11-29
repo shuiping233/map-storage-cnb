@@ -2,7 +2,6 @@ package utils
 
 import (
 	"encoding/hex"
-	"io"
 	"os"
 	"time"
 
@@ -20,14 +19,10 @@ func InitDefaultDir() {
 	}
 }
 
-// Hash file in sha256
-func HashFile(file io.Reader) (string, error) {
-	hash := sha256.New()
-	_, err := io.Copy(hash, file)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(hash.Sum(nil)), nil
+// Hash bytes in sha256
+func HashFile(data []byte) string {
+	hash := sha256.Sum256(data) // 返回 [32]byte
+	return hex.EncodeToString(hash[:])
 }
 
 // "2006/01/02"

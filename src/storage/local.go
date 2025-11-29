@@ -37,22 +37,12 @@ func (s *LocalStorage) Close() error {
 	return nil
 }
 
-func (s *LocalStorage) Save(ctx context.Context, metaData model.MapMetaData, reader io.Reader) (*model.MapMetaData, error) {
-	hash, err := utils.HashFile(reader)
-	if err != nil {
+func (s *LocalStorage) Save(ctx context.Context, metaData model.MapMetaData, data []byte) (*model.MapMetaData, error) {
+
+	if err := os.WriteFile(joinTmpPath(metaData.Hash), data, 0655); err != nil {
 		return nil, err
 	}
-	path, err := os.OpenFile(joinTmpPath(hash), os.O_CREATE, 0655)
-	if err != nil {
-		return nil, err
-	}
-	defer path.Close()
-	_, err = io.Copy(path, reader)
-	if err != nil {
-		return nil, err
-	}
-	err = s.DB.Add(ctx, metaData)
-	if err != nil {
+	if err := s.DB.Add(ctx, metaData); err != nil {
 		return nil, err
 	}
 	return nil, nil

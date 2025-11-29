@@ -12,7 +12,7 @@ type Interface interface {
 	Close() error
 
 	// 写：从 reader 读直到 EOF 并计算哈希，返回最终 Meta
-	Save(ctx context.Context, metaData model.MapMetaData, reader io.Reader) (*model.MapMetaData, error)
+	Save(ctx context.Context, metaData model.MapMetaData, data []byte) (*model.MapMetaData, error)
 
 	// 读：把文件内容 copy 到 writer
 	Get(ctx context.Context, hash string, writer io.Writer) (*model.MapMetaData, error)

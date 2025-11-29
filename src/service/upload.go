@@ -1,6 +1,7 @@
 package service
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -50,11 +51,12 @@ func (u *UploadAPI) MapUploadApi(ctx *gin.Context) {
 	}
 	defer file.Close()
 
-	hash, err = utils.HashFile(file)
+	fileData, err := io.ReadAll(file)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, model.Fail("hash file failed : "+err.Error()))
+		ctx.JSON(http.StatusInternalServerError, model.Fail("read file failed : "+err.Error()))
 		return
 	}
+	hash = utils.HashFile(fileData)
 
 	exist, _ := u.Storage.Exists(ctx, hash)
 	if exist {
@@ -65,7 +67,7 @@ func (u *UploadAPI) MapUploadApi(ctx *gin.Context) {
 	mapMetaData := model.NewMetaData(hash, filename)
 	mapMetaData.Size = uint64(fileSize)
 
-	_, err = u.Storage.Save(ctx, mapMetaData, file)
+	_, err = u.Storage.Save(ctx, mapMetaData, fileData)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, model.Fail(err.Error()))
 		return
