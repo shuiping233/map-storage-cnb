@@ -11,11 +11,14 @@ import (
 )
 
 type StorageDB struct {
-	DB *gorm.DB
+	cfg model.StorageDBConfig
+	DB  *gorm.DB
 }
 
-func DBInit(DBPath string) (*StorageDB, error) {
-	db, err := gorm.Open(sqlite.Open(DBPath), &gorm.Config{})
+func DBInit(cfg model.StorageConfig) (*StorageDB, error) {
+	// TODO  mysql之类的适配器还没做
+
+	db, err := gorm.Open(sqlite.Open(cfg.DB.URL), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +26,7 @@ func DBInit(DBPath string) (*StorageDB, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return &StorageDB{DB: db}, nil
+	return &StorageDB{DB: db, cfg: cfg.DB}, nil
 
 }
 

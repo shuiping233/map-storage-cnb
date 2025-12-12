@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log"
 	"map-storage-cnb/src/config"
@@ -9,10 +10,17 @@ import (
 	"map-storage-cnb/src/utils"
 	"os"
 	"path/filepath"
+
+	"gorm.io/gorm"
+)
+
+const (
+	StorageTypeLocalStorage model.StorageType = "LocalStorage"
 )
 
 type LocalStorage struct {
-	DB *StorageDB
+	cfg model.LocalStorageConfig
+	DB  *StorageDB
 }
 
 func joinTmpPath(name string) string {
@@ -23,13 +31,14 @@ func NewLocalStorage() *LocalStorage {
 	return &LocalStorage{}
 }
 
-func (s *LocalStorage) Init() error {
+func (g *LocalStorage) Init(cfg model.StorageConfig) error {
+	g.cfg = cfg.LocalStorage
 	utils.InitDefaultDir()
-	db, err := DBInit(joinTmpPath(config.DbName))
+	db, err := DBInit(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-	s.DB = db
+	g.DB = db
 	return nil
 }
 func (s *LocalStorage) Close() error {
@@ -37,19 +46,20 @@ func (s *LocalStorage) Close() error {
 	return nil
 }
 
-func (s *LocalStorage) Save(ctx context.Context, metaData model.MapMetaData, data []byte) (*model.MapMetaData, error) {
-
+func (g *LocalStorage) Save(ctx context.Context, metaData model.MapMetaData, data []byte) (*model.MapMetaData, error) {
+	metaData.SetStorageType(StorageTypeLocalStorage)
 	if err := os.WriteFile(joinTmpPath(metaData.Hash), data, 0655); err != nil {
 		return nil, err
 	}
-	if err := s.DB.Add(ctx, metaData); err != nil {
+	metaData.SetStorageStatus(model.MapUploadStatusSuccess, "")
+	if err := g.DB.Add(ctx, metaData); err != nil {
 		return nil, err
 	}
 	return nil, nil
 }
 
-func (s *LocalStorage) Get(ctx context.Context, hash string, writer io.Writer) (*model.MapMetaData, error) {
-	metaData, err := s.DB.Get(ctx, hash)
+func (g *LocalStorage) Get(ctx context.Context, hash string, writer io.Writer) (*model.MapMetaData, error) {
+	metaData, err := g.DB.Get(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
@@ -67,18 +77,18 @@ func (s *LocalStorage) Get(ctx context.Context, hash string, writer io.Writer) (
 	return metaData, nil
 }
 
-func (s *LocalStorage) GetMeta(ctx context.Context, hash string) (*model.MapMetaData, error) {
-	metaData, err := s.DB.Get(ctx, hash)
+func (g *LocalStorage) GetMeta(ctx context.Context, hash string) (*model.MapMetaData, error) {
+	metaData, err := g.DB.Get(ctx, hash)
 	if err != nil {
 		return nil, err
 	}
 	return metaData, nil
 }
 
-func (s *LocalStorage) GetHistory(ctx context.Context, hash string, limit int) ([]model.MapMetaData, error) {
+func (g *LocalStorage) GetHistory(ctx context.Context, hash string, limit int) ([]model.MapMetaData, error) {
 	var result []model.MapMetaData
 	for {
-		metaData, err := s.DB.Get(ctx, hash)
+		metaData, err := g.DB.Get(ctx, hash)
 		if err != nil {
 			return nil, err
 		}
@@ -91,51 +101,40 @@ func (s *LocalStorage) GetHistory(ctx context.Context, hash string, limit int) (
 	return result, nil
 }
 
-func (s *LocalStorage) Exists(ctx context.Context, hash string) (bool, error) {
-	_, err := s.DB.Get(ctx, hash)
+func (g *LocalStorage) Exists(ctx context.Context, hash string) (bool, error) {
+	_, err := g.DB.Get(ctx, hash)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
 		return false, err
 	}
 	return true, nil
 }
 
 // 精确查 name 地图名称, 返回元数据列表
-func (s *LocalStorage) SearchExact(ctx context.Context, name string, limit int) ([]model.MapMetaData, error) {
-	if limit <= 0 {
-		limit = 10
-	}
-	result, err := s.DB.SearchExact(ctx, name, limit)
+func (g *LocalStorage) SearchExact(ctx context.Context, name string, limit int) ([]model.MapMetaData, error) {
+	return g.DB.SearchExact(ctx, name, limit)
+}
+
+func (g *LocalStorage) Search(ctx context.Context, name string, limit int) ([]model.MapMetaData, error) {
+	result, err := g.DB.Search(ctx, name, limit)
 	if err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (s *LocalStorage) Search(ctx context.Context, name string, limit int) ([]model.MapMetaData, error) {
-	if limit <= 0 {
-		limit = 10
-	}
-	result, err := s.DB.Search(ctx, name, limit)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
+func (g *LocalStorage) List(ctx context.Context, page int, desc bool, orderField string, limit int) ([]model.MapMetaData, error) {
+	return g.DB.List(ctx, page, desc, orderField, limit)
 }
 
-func (s *LocalStorage) List(ctx context.Context, page int, desc bool, orderField string, limit int) ([]model.MapMetaData, error) {
-	result, err := s.DB.List(ctx, page, desc, orderField, limit)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-func (s *LocalStorage) Delete(ctx context.Context, hash string) error {
+func (g *LocalStorage) Delete(ctx context.Context, hash string) error {
 	err := os.Remove(joinTmpPath(hash))
 	if err != nil {
 		return err
 	}
-	err = s.DB.Delete(ctx, hash)
+	err = g.DB.Delete(ctx, hash)
 	if err != nil {
 		return err
 	}

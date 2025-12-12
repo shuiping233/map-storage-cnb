@@ -58,9 +58,9 @@ func (u *UploadAPI) MapUploadApi(ctx *gin.Context) {
 	}
 	hash = utils.HashFile(fileData)
 
-	exist, _ := u.Storage.Exists(ctx, hash)
-	if exist {
-		ctx.JSON(http.StatusConflict, model.Fail(request.Filename+" already uploaded"))
+	meta, _ := u.Storage.GetMeta(ctx, hash)
+	if meta != nil {
+		ctx.JSON(http.StatusConflict, model.FailWithData(request.Filename+" already uploaded", meta))
 		return
 	}
 

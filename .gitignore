@@ -38,3 +38,8 @@ dist/
 uploads/
 tmp/
 *.map
+test_ssh_key/
+test_space/
+config/config.json
+*.db
+test.py

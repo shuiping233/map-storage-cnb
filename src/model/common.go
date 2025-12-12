@@ -23,3 +23,8 @@ func Common(msg string) CommonResp {
 func Fail(msg string) CommonResp {
 	return CommonResp{Msg: msg}
 }
+
+// 快速构造错误响应
+func FailWithData(msg string, data DataAny) CommonResp {
+	return CommonResp{Msg: msg, Data: data}
+}

@@ -7,7 +7,7 @@ import (
 )
 
 type Interface interface {
-	Init() error
+	Init(cfg model.StorageConfig) error
 
 	Close() error
 
